@@ -1,5 +1,6 @@
 const std = @import("std");
 const net = std.net;
+const mem = std.mem;
 
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
@@ -16,10 +17,21 @@ pub fn main() !void {
     });
     defer listener.deinit();
 
+    var buf: [128]u8 = undefined;
     while (true) {
         const connection = try listener.accept();
+        defer connection.stream.close();
 
         try stdout.print("accepted new connection", .{});
-        connection.stream.close();
+
+        while (true) {
+            const read = try connection.stream.read(&buf);
+
+            if (read == 0) {
+                continue;
+            }
+
+            try connection.stream.writeAll("+PONG\r\n");
+        }
     }
 }
